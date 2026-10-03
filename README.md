@@ -1,64 +1,292 @@
-# ResearchPilot AI
+# 🔬 ResearchPilot AI — Autonomous Multi-Agent Research Assistant
 
-ResearchPilot AI is a Streamlit research assistant backed by a supervisor-routed
-LangGraph workflow. It searches Crossref and arXiv, retrieves locally indexed PDF
-evidence, analyzes and cites the sources, and asks a critic to approve or request
-bounded revisions before writing the final report.
+**ResearchPilot AI** is an autonomous research assistant built with **LangGraph, LangChain, Groq, RAG, ChromaDB, Crossref, arXiv, and Streamlit**.
 
-## Requirements
+It automates a complete research workflow: understanding a research question, searching academic sources, retrieving evidence from uploaded PDFs, analyzing information, generating citations, reviewing the answer through a critic agent, performing bounded revisions, and producing a structured final research report.
 
-- Python 3.10 or newer
-- A Groq API key
+## 🚀 Live Demo
 
-## Install
+🌐 **Try ResearchPilot AI:**
+https://researchpilot-aigit-yqrkrvctgobxsfugevgbvn.streamlit.app/
 
-From the project directory:
+> The application is deployed using Streamlit Community Cloud.
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+---
+
+# 🎯 What Problem Does It Solve?
+
+Research often requires switching between multiple tools:
+
+* 🔎 Search for research papers
+* 📄 Read and analyze PDFs
+* 🧠 Understand and compare findings
+* 🔗 Track sources and citations
+* ✍️ Write a structured report
+* 🔍 Check whether claims are actually supported
+* 🔄 Revise the report when problems are found
+
+ResearchPilot AI combines these tasks into a single **multi-agent research workflow**.
+
+Instead of simply asking an LLM:
+
+```text
+Question → LLM → Answer
 ```
 
-Set `GROQ_API_KEY` in the environment or in a local `.env` file in the project
-directory. The application can start without the key, but a research run requires
-it. `GROQ_MODEL` optionally overrides the default Groq model
-(`openai/gpt-oss-120b`). Do not commit API keys.
+ResearchPilot AI uses:
 
-LangSmith tracing is optional. Configure the standard LangChain variables
-(`LANGSMITH_TRACING`, `LANGSMITH_API_KEY`, and `LANGSMITH_PROJECT`) to enable it.
-The project does not require an OpenAI API key.
-
-## Run
-
-Start the Streamlit interface from the project directory:
-
-```powershell
-streamlit run frontend/streamlit_app.py
+```text
+Research Question
+       ↓
+   Supervisor
+       ↓
+ ┌─────┼─────────┐
+ ↓     ↓         ↓
+Research  RAG   Analysis
+ Agent    Agent   Agent
+ ↓         ↓       ↓
+ └──────→ Citation
+              ↓
+            Critic
+              ↓
+        ┌─────┴─────┐
+        ↓           ↓
+    Revision      Approved
+        ↓           ↓
+   Supervisor      Writer
+        ↓           ↓
+      Critic ←──────┘
+                    ↓
+              Final Report
 ```
 
-Or run the command-line interface:
+---
 
-```powershell
-python -m backend.main
+# 🧠 Core Workflow
+
+## 1. User Research Query
+
+The user enters a research question such as:
+
+```text
+What are the recent approaches for detecting deepfakes using
+vision transformers?
 ```
 
-Run the local test suite with:
+The query becomes the initial state of the LangGraph workflow.
 
-```powershell
-python -m unittest discover -s tests -v
+---
+
+## 2. Supervisor Agent
+
+The **Supervisor Agent** manages the research workflow.
+
+It determines which research stages are still required and routes the state to the appropriate agent.
+
+```text
+                    Supervisor
+                        │
+        ┌───────────────┼───────────────┐
+        ↓               ↓               ↓
+    Research           RAG           Analysis
+        │               │               │
+        └───────────────┼───────────────┘
+                        ↓
+                    Citation
+                        ↓
+                     Critic
 ```
 
-## Local research documents
+The supervisor is state-driven rather than simply executing every agent blindly.
 
-Upload a PDF in the Streamlit app and select **Index PDF** to split and store its
-text in Chroma at `chroma_db`. Set `CHROMA_PERSIST_DIRECTORY` to use another
-location. The repository does not include an indexed document collection; local
-PDF retrieval is optional because the research agent also searches Crossref and
-arXiv.
+---
 
-The supervisor routes through missing research stages based on state, then runs
-the critic. If the critic requests changes, the supervisor chooses a revision
-specialist and loops through analysis, citations, and review again, up to two
-revision rounds. If the limit is reached, the report is labeled as not approved
-and includes the outstanding review issues.
+# 🔎 3. Research Agent
+
+The Research Agent searches academic sources including:
+
+* Crossref
+* arXiv
+
+It collects relevant research information that can be used by downstream agents.
+
+Example:
+
+```text
+Research Question
+      ↓
+Crossref / arXiv
+      ↓
+Relevant Papers
+      ↓
+Research Evidence
+```
+
+---
+
+# 📚 4. PDF RAG Agent
+
+Users can upload their own research papers or documents.
+
+The PDF pipeline is:
+
+```text
+PDF
+ ↓
+PDF Loader
+ ↓
+Text Extraction
+ ↓
+Recursive Text Splitting
+ ↓
+Embeddings
+ ↓
+ChromaDB
+ ↓
+Retriever
+ ↓
+Relevant Chunks
+ ↓
+Research Workflow
+```
+
+This allows ResearchPilot AI to answer questions using evidence from the user's own documents.
+
+### Local Vector Store
+
+The project uses **ChromaDB** for local vector storage.
+
+By default:
+
+```text
+chroma_db/
+```
+
+is used as the persistence directory.
+
+The location can be changed with:
+
+```text
+CHROMA_PERSIST_DIRECTORY
+```
+
+---
+
+# 🧠 5. Analysis Agent
+
+The Analysis Agent receives research evidence and retrieved PDF information.
+
+It can:
+
+* summarize findings
+* compare approaches
+* identify important observations
+* synthesize information from multiple sources
+* generate key findings
+
+Example:
+
+```text
+Paper A ──┐
+Paper B ──┼──→ Analysis Agent → Key Findings
+Paper C ──┘
+PDF Data ──┘
+```
+
+---
+
+# 🔗 6. Citation Agent
+
+The Citation Agent connects research claims with their supporting sources.
+
+The goal is to reduce unsupported statements and make the final report easier to verify.
+
+```text
+Claim
+ ↓
+Supporting Evidence
+ ↓
+Source
+ ↓
+Citation
+```
+
+The system maintains citation/source information as part of the research state.
+
+---
+
+# 🧐 7. Critic Agent
+
+ResearchPilot AI does not immediately accept the generated analysis.
+
+The Critic Agent reviews the research output and checks for issues such as:
+
+* unsupported claims
+* insufficient evidence
+* citation problems
+* missing information
+* research-quality issues
+
+The critic can return:
+
+```text
+APPROVED
+```
+
+or:
+
+```text
+REVISION REQUIRED
+```
+
+---
+
+# 🔄 8. Bounded Revision Loop
+
+If the critic finds problems, the workflow does not restart indefinitely.
+
+The supervisor routes the state back to the appropriate specialist.
+
+```text
+Critic
+  │
+  ├── Approved ─────────→ Writer
+  │
+  └── Revision Required
+              ↓
+          Supervisor
+              ↓
+       Analysis / Citation
+              ↓
+            Critic
+```
+
+The current implementation limits revision rounds to **two iterations**.
+
+This prevents uncontrolled agent loops and unnecessary API calls.
+
+If the revision limit is reached, the report is clearly marked as not approved and includes the outstanding review issues.
+
+---
+
+# ✍️ 9. Writer Agent
+
+Once the research passes the review stage, the Writer Agent generates the final structured research report.
+
+The final output can contain:
+
+* Research overview
+* Key findings
+* Analysis
+* Comparisons
+* Supporting evidence
+* Citations
+* Critic/review information
+* Outstanding issues when applicable
+
+---
+
+# 🏗️ System Architecture
+
+```text
+```
