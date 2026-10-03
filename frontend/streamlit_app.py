@@ -1,7 +1,14 @@
+
 from pathlib import Path
 
 import streamlit as st
+import sys
+from pathlib import Path
 
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR))
+
+from backend.config import VECTORSTORE_PATH
 from backend.config import VECTORSTORE_PATH
 from backend.rag.ingest import index_pdf
 from backend.graph.workflow import create_workflow
